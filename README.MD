@@ -2,7 +2,7 @@
 
 A client-side web app that generates structured threat models using the **STRIDE framework** — the same methodology used by security teams at Microsoft, Google, and across the industry.
 
-**[Live Demo →](https://YOUR_USERNAME.github.io/threat-model-visualizer)**
+**[Live Demo →](https://fluidfortune.github.io/threat-model-visualizer)**
 
 ---
 
@@ -23,13 +23,13 @@ Describe your system's architecture in plain English and the app returns a full 
 ## Design decisions worth noting
 
 **User-supplied API key**
-The app uses the Google Gemini API but does not bundle an API key. Instead, users paste their own key into the interface. The key is held in a JavaScript variable for the session and is gone when the tab closes — it is never written to localStorage, never sent to any server other than `generativelanguage.googleapis.com`, and never logged. This is a deliberate security design choice.
+The app uses the Groq API but does not bundle an API key. Instead, users paste their own key into the interface. The key is held in a JavaScript variable for the session and is gone when the tab closes — it is never written to localStorage, never sent to any server other than `api.groq.com`, and never logged. This is a deliberate security design choice.
 
 **Fully client-side**
 There is no backend, no database, no server. The entire app is a single HTML file. This eliminates a large class of server-side vulnerabilities and means the app can be deployed anywhere static files are served — including GitHub Pages.
 
 **Free API tier**
-The app runs on Gemini 2.0 Flash, which has a generous free tier (1,500 requests/day). No credit card required to get an API key.
+The app runs on Llama 3.3 70B via Groq, which has a generous free tier with no credit card required. Groq's inference is also extremely fast, typically returning results in under 3 seconds.
 
 ---
 
@@ -43,7 +43,7 @@ cd threat-model-visualizer
 open index.html   # or just double-click it
 ```
 
-Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+Get a free Groq API key at [console.groq.com](https://console.groq.com).
 
 ---
 
@@ -59,7 +59,7 @@ Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.googl
 ## Tech stack
 
 - Vanilla HTML, CSS, JavaScript — no frameworks
-- Google Gemini 2.0 Flash API
+- Groq API (Llama 3.3 70B)
 - STRIDE threat modeling framework
 
 ---
