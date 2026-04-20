@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Threat Model Visualizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f7f7f5;
+      --bg-tertiary: #f0efe9;
+      --text: #1a1a1a;
+      --text-secondary: #555;
+      --text-tertiary: #888;
+      --border: rgba(0,0,0,0.12);
+      --border-secondary: rgba(0,0,0,0.2);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --danger-bg: #FCEBEB;
+      --danger-text: #A32D2D;
+      --danger-border: rgba(163,45,45,0.25);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1c;
+        --bg-secondary: #252525;
+        --bg-tertiary: #2e2e2e;
+        --text: #f0f0f0;
+        --text-secondary: #aaa;
+        --text-tertiary: #666;
+        --border: rgba(255,255,255,0.1);
+        --border-secondary: rgba(255,255,255,0.18);
+        --danger-bg: #2e1515;
+        --danger-text: #f09595;
+        --danger-border: rgba(240,149,149,0.2);
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-tertiary);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .page-header {
+      background: var(--bg);
+      border-bottom: 0.5px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .page-header .logo {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .page-header .badge {
+      font-size: 11px;
+      background: #EEEDFE;
+      color: #3C3489;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .page-header .badge { background: #26215C; color: #AFA9EC; }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .hero { margin-bottom: 2.5rem; }
+    .hero h1 { font-size: 28px; font-weight: 500; margin-bottom: 8px; color: var(--text); }
+    .hero p { font-size: 15px; color: var(--text-secondary); max-width: 580px; }
+
+    .stride-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .stride-chip {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .s-chip { background: #EEEDFE; color: #3C3489; }
+    .t-chip { background: #FAEEDA; color: #633806; }
+    .r-chip { background: #F1EFE8; color: #2C2C2A; }
+    .i-chip { background: #E6F1FB; color: #0C447C; }
+    .d-chip { background: #FAECE7; color: #712B13; }
+    .e-chip { background: #FBEAF0; color: #72243E; }
+
+    @media (prefers-color-scheme: dark) {
+      .s-chip { background: #26215C; color: #AFA9EC; }
+      .t-chip { background: #412402; color: #EF9F27; }
+      .r-chip { background: #2C2C2A; color: #B4B2A9; }
+      .i-chip { background: #042C53; color: #85B7EB; }
+      .d-chip { background: #4A1B0C; color: #F0997B; }
+      .e-chip { background: #4B1528; color: #ED93B1; }
+    }
+
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+
+    .key-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--bg-secondary);
+      color: var(--text);
+      border: 0.5px solid var(--border-secondary);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    textarea:focus {
+      border-color: #7F77DD;
+      box-shadow: 0 0 0 3px rgba(127,119,221,0.12);
+    }
+
+    .key-row input { flex: 1; }
+
+    textarea {
+      resize: vertical;
+      min-height: 110px;
+      line-height: 1.6;
+    }
+
+    .show-key-btn {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      white-space: nowrap;
+    }
+
+    .trust-note {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 8px;
+    }
+
+    .trust-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #639922;
+      flex-shrink: 0;
+    }
+
+    .get-key-link {
+      display: block;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 5px;
+    }
+
+    .get-key-link a {
+      color: #185FA5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .get-key-link a { color: #85B7EB; }
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 11px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--bg);
+      border: 0.5px solid var(--border-secondary);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      transition: background 0.15s, transform 0.1s;
+      margin-top: 4px;
+    }
+
+    .generate-btn:hover:not(:disabled) {
+      background: var(--bg-secondary);
+    }
+
+    .generate-btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    .generate-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .error-box {
+      background: var(--danger-bg);
+      border: 0.5px solid var(--danger-border);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--danger-text);
+      margin-top: 10px;
+      display: none;
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 14px 0;
+      display: none;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border-secondary);
+      border-top-color: var(--text-secondary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results { margin-top: 2rem; display: none; }
+    .results-title { font-size: 20px; font-weight: 500; margin-bottom: 1.25rem; color: var(--text); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    .summary-card .num {
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .summary-card .lbl {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .stride-section { margin-bottom: 1.5rem; }
+
+    .stride-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .stride-pill {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .stride-title { font-size: 15px; font-weight: 500; color: var(--text); }
+    .stride-count { font-size: 13px; color: var(--text-secondary); }
+
+    .threat-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+    }
+
+    .threat-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .threat-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .sev-badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 9px;
+      border-radius: 20px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .sev-critical { background: #FCEBEB; color: #A32D2D; }
+    .sev-high     { background: #FAEEDA; color: #854F0B; }
+    .sev-medium   { background: #E6F1FB; color: #185FA5; }
+    .sev-low      { background: #EAF3DE; color: #3B6D11; }
+
+    @media (prefers-color-scheme: dark) {
+      .sev-critical { background: #501313; color: #F09595; }
+      .sev-high     { background: #412402; color: #FAC775; }
+      .sev-medium   { background: #042C53; color: #85B7EB; }
+      .sev-low      { background: #173404; color: #97C459; }
+    }
+
+    .threat-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 10px;
+    }
+
+    .mitigation-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .mitigation-text {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .risk-summary-box {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.75;
+    }
+
+    .page-footer {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .page-footer a {
+      color: var(--text-tertiary);
+    }
+
+    @media (max-width: 500px) {
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hero h1 { font-size: 22px; }
+      .container { padding: 1.5rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <span class="logo">Threat model visualizer</span>
+    <span class="badge">STRIDE framework</span>
+  </header>
+
+  <main class="container">
+
+    <div class="hero">
+      <h1>What are your system's threats?</h1>
+      <p>Describe your application's architecture and get a structured threat model powered by the STRIDE framework — the same methodology used by security teams at Microsoft and Google.</p>
+      <div class="stride-chips">
+        <span class="stride-chip s-chip">S — Spoofing</span>
+        <span class="stride-chip t-chip">T — Tampering</span>
+        <span class="stride-chip r-chip">R — Repudiation</span>
+        <span class="stride-chip i-chip">I — Info disclosure</span>
+        <span class="stride-chip d-chip">D — Denial of service</span>
+        <span class="stride-chip e-chip">E — Elevation of privilege</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Google Gemini API key</div>
+      <div class="key-row">
+        <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off" />
+        <button class="show-key-btn" onclick="toggleKey()">show</button>
+      </div>
+      <div class="trust-note">
+        <div class="trust-dot"></div>
+        Held in memory only — never stored or sent anywhere except generativelanguage.googleapis.com
+      </div>
+      <span class="get-key-link">Get a free key (no credit card) at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></span>
+    </div>
+
+    <div class="card">
+      <div class="section-label">System description</div>
+      <textarea id="systemDesc" placeholder="Example: A React SPA with a Node.js REST API and PostgreSQL database. Users authenticate with JWT stored in localStorage. File uploads go to S3. The API sits behind AWS API Gateway. There's an admin panel at /admin restricted to internal staff."></textarea>
+    </div>
+
+    <button class="generate-btn" id="genBtn" onclick="generate()">Generate threat model</button>
+    <div class="error-box" id="errorBox"></div>
+    <div class="status" id="status"><span class="spinner"></span>Analyzing your system...</div>
+
+    <div class="results" id="results">
+      <div class="results-title">Threat model</div>
+      <div class="summary-grid" id="summaryGrid"></div>
+      <div id="strideResults"></div>
+      <div class="stride-section">
+        <div class="section-label" style="margin-bottom: 10px;">Overall risk assessment</div>
+        <div class="risk-summary-box" id="riskSummary"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="page-footer">
+    Built with the STRIDE threat modeling framework &nbsp;·&nbsp;
+    <a href="https://github.com/YOUR_USERNAME/threat-model-visualizer" target="_blank" rel="noopener">View source</a>
+  </footer>
+
+  <script>
+    const STRIDE = [
+      { key: 'S', label: 'Spoofing',              pillClass: 's-chip' },
+      { key: 'T', label: 'Tampering',             pillClass: 't-chip' },
+      { key: 'R', label: 'Repudiation',           pillClass: 'r-chip' },
+      { key: 'I', label: 'Information disclosure', pillClass: 'i-chip' },
+      { key: 'D', label: 'Denial of service',      pillClass: 'd-chip' },
+      { key: 'E', label: 'Elevation of privilege', pillClass: 'e-chip' },
+    ];
+
+    function toggleKey() {
+      const inp = document.getElementById('apiKey');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    function sevClass(sev) {
+      const s = (sev || '').toLowerCase();
+      if (s === 'critical') return 'sev-critical';
+      if (s === 'high')     return 'sev-high';
+      if (s === 'medium')   return 'sev-medium';
+      return 'sev-low';
+    }
+
+    function showError(msg) {
+      const b = document.getElementById('errorBox');
+      b.textContent = msg;
+      b.style.display = 'block';
+    }
+
+    async function generate() {
+      const key  = document.getElementById('apiKey').value.trim();
+      const desc = document.getElementById('systemDesc').value.trim();
+      const errBox = document.getElementById('errorBox');
+      errBox.style.display = 'none';
+
+      if (!key)  { showError('Please enter your Gemini API key.'); return; }
+      if (!desc) { showError('Please describe your system.'); return; }
+
+      const btn = document.getElementById('genBtn');
+      btn.disabled = true;
+      document.getElementById('status').style.display = 'block';
+      document.getElementById('results').style.display = 'none';
+
+      const prompt = `You are a cybersecurity expert performing a STRIDE threat model analysis.
+
+System description: ${desc}
+
+Return ONLY a valid JSON object — no markdown, no backticks, no explanation, no preamble. Raw JSON only.
+
+Use this exact structure:
+{
+  "threats": {
+    "S": [{"name": "...", "severity": "Critical|High|Medium|Low", "description": "...", "mitigation": "..."}],
+    "T": [...],
+    "R": [...],
+    "I": [...],
+    "D": [...],
+    "E": [...]
+  },
+  "riskSummary": "2-3 sentence overall assessment of the system risk posture and top priorities."
+}
+
+Rules:
+- 2-4 threats per STRIDE category
+- Severity must be exactly one of: Critical, High, Medium, Low
+- Description: 1-2 sentences on the specific attack vector for THIS system
+- Mitigation: 1-2 sentences with concrete specific recommendations
+- Be specific to the described system, not generic`;
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
+            })
+          }
+        );
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error?.message || `API error ${res.status}`);
+        }
+
+        const data = await res.json();
+        const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const clean = raw.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(clean);
+        renderResults(parsed);
+
+      } catch (e) {
+        showError(e.message || 'Something went wrong. Check your API key and try again.');
+      } finally {
+        btn.disabled = false;
+        document.getElementById('status').style.display = 'none';
+      }
+    }
+
+    function renderResults(data) {
+      const threats = data.threats || {};
+      let total = 0, critical = 0, high = 0;
+
+      STRIDE.forEach(s => {
+        (threats[s.key] || []).forEach(t => {
+          total++;
+          if (t.severity === 'Critical') critical++;
+          if (t.severity === 'High') high++;
+        });
+      });
+
+      document.getElementById('summaryGrid').innerHTML = `
+        <div class="summary-card"><div class="num">${total}</div><div class="lbl">Total threats</div></div>
+        <div class="summary-card"><div class="num" style="color:#A32D2D">${critical}</div><div class="lbl">Critical</div></div>
+        <div class="summary-card"><div class="num" style="color:#854F0B">${high}</div><div class="lbl">High</div></div>
+        <div class="summary-card"><div class="num">${total - critical - high}</div><div class="lbl">Medium / Low</div></div>
+      `;
+
+      const strideEl = document.getElementById('strideResults');
+      strideEl.innerHTML = '';
+
+      STRIDE.forEach(s => {
+        const items = threats[s.key] || [];
+        if (!items.length) return;
+        const section = document.createElement('div');
+        section.className = 'stride-section';
+        section.innerHTML = `
+          <div class="stride-header">
+            <span class="stride-pill ${s.pillClass}">${s.key}</span>
+            <span class="stride-title">${s.label}</span>
+            <span class="stride-count">${items.length} threat${items.length !== 1 ? 's' : ''}</span>
+          </div>
+          ${items.map(t => `
+            <div class="threat-card">
+              <div class="threat-top">
+                <div class="threat-name">${t.name}</div>
+                <span class="sev-badge ${sevClass(t.severity)}">${t.severity}</span>
+              </div>
+              <div class="threat-desc">${t.description}</div>
+              <div class="mitigation-label">Mitigation</div>
+              <div class="mitigation-text">${t.mitigation}</div>
+            </div>
+          `).join('')}
+        `;
+        strideEl.appendChild(section);
+      });
+
+      document.getElementById('riskSummary').innerHTML = data.riskSummary || '';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+
+</body>
+</html>
